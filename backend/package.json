@@ -4,13 +4,10 @@
   "description": "Backend for Campus Meal Card Management System",
   "main": "server.js",
   "scripts": {
-
-  "start": "node server.js",
-  "dev": "nodemon server.js",
-  "seed": "node seed.js",
-  "build": "echo \"No build step required\""
-}
-
+    "start": "node server.js",
+    "dev": "nodemon server.js",
+    "seed": "node seed.js",
+    "build": "echo \"No build step required\""
   },
   "dependencies": {
     "bcryptjs": "^2.4.3",
