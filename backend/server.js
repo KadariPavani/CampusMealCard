@@ -3,6 +3,9 @@ const mongoose = require('mongoose');
 const cors = require('cors');
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
+const multer = require('multer');
+const path = require('path');
+const fs = require('fs');
 require('dotenv').config();
 
 const app = express();
@@ -10,6 +13,29 @@ const app = express();
 // Middleware
 app.use(cors());
 app.use(express.json());
+app.use('/uploads', express.static('uploads'));
+
+// Create uploads directory if it doesn't exist
+if (!fs.existsSync('uploads')) {
+  fs.mkdirSync('uploads');
+}
+
+// Configure multer for file uploads
+const storage = multer.diskStorage({
+  destination: function (req, file, cb) {
+    cb(null, 'uploads/');
+  },
+  filename: function (req, file, cb) {
+    cb(null, Date.now() + '-' + file.originalname);
+  }
+});
+
+const upload = multer({ 
+  storage: storage,
+  limits: {
+    fileSize: 5 * 1024 * 1024 // 5MB limit
+  }
+});
 
 // MongoDB Connection
 mongoose.connect(process.env.MONGODB_URI || 'mongodb://localhost:27017/mealcard', {
@@ -47,12 +73,16 @@ const transactionSchema = new mongoose.Schema({
   createdAt: { type: Date, default: Date.now },
 });
 
-// Recharge Request Schema
+// Recharge Request Schema (Updated with payment details)
 const rechargeRequestSchema = new mongoose.Schema({
   studentId: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true },
   cardId: { type: mongoose.Schema.Types.ObjectId, ref: 'MealCard', required: true },
   amount: { type: Number, required: true },
   status: { type: String, enum: ['pending', 'approved', 'rejected'], default: 'pending' },
+  paymentMethod: { type: String, enum: ['online', 'cash', 'upi'], default: 'upi' },
+  transactionId: { type: String },
+  screenshot: { type: String }, // Path to uploaded screenshot
+  upiReference: { type: String },
   requestedAt: { type: Date, default: Date.now },
   processedBy: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
   processedAt: { type: Date },
@@ -64,7 +94,20 @@ const mealSchema = new mongoose.Schema({
   price: { type: Number, required: true },
   category: { type: String, required: true },
   isAvailable: { type: Boolean, default: true },
+  image: { type: String }, // Path to meal image
+  description: { type: String },
   createdAt: { type: Date, default: Date.now },
+});
+
+// Analytics Schema for manager dashboard
+const analyticsSchema = new mongoose.Schema({
+  date: { type: Date, required: true },
+  totalRecharges: { type: Number, default: 0 },
+  totalPurchases: { type: Number, default: 0 },
+  totalRevenue: { type: Number, default: 0 },
+  pendingRequests: { type: Number, default: 0 },
+  approvedRequests: { type: Number, default: 0 },
+  rejectedRequests: { type: Number, default: 0 },
 });
 
 // Models
@@ -73,6 +116,7 @@ const MealCard = mongoose.model('MealCard', mealCardSchema);
 const Transaction = mongoose.model('Transaction', transactionSchema);
 const RechargeRequest = mongoose.model('RechargeRequest', rechargeRequestSchema);
 const Meal = mongoose.model('Meal', mealSchema);
+const Analytics = mongoose.model('Analytics', analyticsSchema);
 
 // Middleware for authentication
 const authenticateToken = (req, res, next) => {
@@ -132,6 +176,7 @@ app.post('/api/auth/register', async (req, res) => {
       const mealCard = new MealCard({
         cardNumber,
         studentId: user._id,
+        balance: 100, // Default balance for new students
       });
       await mealCard.save();
     }
@@ -180,7 +225,7 @@ app.post('/api/auth/login', async (req, res) => {
 // Student Routes
 app.get('/api/student/card', authenticateToken, authorize(['student']), async (req, res) => {
   try {
-    const card = await MealCard.findOne({ studentId: req.user.userId });
+    const card = await MealCard.findOne({ studentId: req.user.userId }).populate('studentId', 'name email studentId');
     if (!card) {
       return res.status(404).json({ message: 'Card not found' });
     }
@@ -207,9 +252,18 @@ app.get('/api/student/transactions', authenticateToken, authorize(['student']), 
   }
 });
 
-app.post('/api/student/recharge-request', authenticateToken, authorize(['student']), async (req, res) => {
+app.get('/api/student/meals', authenticateToken, authorize(['student']), async (req, res) => {
   try {
-    const { amount } = req.body;
+    const meals = await Meal.find({ isAvailable: true });
+    res.json(meals);
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+});
+
+app.post('/api/student/recharge-request', authenticateToken, authorize(['student']), upload.single('screenshot'), async (req, res) => {
+  try {
+    const { amount, transactionId, upiReference, paymentMethod } = req.body;
     
     if (amount <= 0) {
       return res.status(400).json({ message: 'Invalid amount' });
@@ -224,10 +278,52 @@ app.post('/api/student/recharge-request', authenticateToken, authorize(['student
       studentId: req.user.userId,
       cardId: card._id,
       amount,
+      transactionId,
+      upiReference,
+      paymentMethod: paymentMethod || 'upi',
+      screenshot: req.file ? req.file.path : null,
     });
 
     await rechargeRequest.save();
-    res.status(201).json({ message: 'Recharge request submitted successfully' });
+    
+    // Update analytics
+    await updateAnalytics();
+    
+    res.status(201).json({ 
+      message: 'Recharge request submitted successfully',
+      requestId: rechargeRequest._id 
+    });
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+});
+
+app.get('/api/student/recharge-requests', authenticateToken, authorize(['student']), async (req, res) => {
+  try {
+    const requests = await RechargeRequest.find({ studentId: req.user.userId })
+      .sort({ requestedAt: -1 })
+      .populate('processedBy', 'name');
+    
+    res.json(requests);
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+});
+
+// Generate UPI payment URL
+app.get('/api/payment/upi-url', authenticateToken, authorize(['student']), async (req, res) => {
+  try {
+    const { amount } = req.query;
+    if (!amount || amount <= 0) {
+      return res.status(400).json({ message: 'Invalid amount' });
+    }
+
+    const upiId = process.env.PHONEPAY_UPI_ID || '96660741389@ibl';
+    const receiverName = process.env.PHONEPAY_RECEIVER_NAME || 'University Meal Card System';
+    
+    const upiUrl = `upi://pay?pa=${upiId}&pn=${encodeURIComponent(receiverName)}&am=${amount}&cu=INR`;
+    
+    res.json({ upiUrl, upiId, receiverName });
   } catch (error) {
     res.status(500).json({ message: error.message });
   }
@@ -236,9 +332,13 @@ app.post('/api/student/recharge-request', authenticateToken, authorize(['student
 // Manager Routes
 app.get('/api/manager/recharge-requests', authenticateToken, authorize(['manager', 'admin']), async (req, res) => {
   try {
-    const requests = await RechargeRequest.find({ status: 'pending' })
+    const { status } = req.query;
+    const filter = status ? { status } : {};
+    
+    const requests = await RechargeRequest.find(filter)
       .populate('studentId', 'name email studentId')
       .populate('cardId', 'cardNumber')
+      .populate('processedBy', 'name')
       .sort({ requestedAt: -1 });
     
     res.json(requests);
@@ -247,9 +347,46 @@ app.get('/api/manager/recharge-requests', authenticateToken, authorize(['manager
   }
 });
 
+app.get('/api/manager/analytics', authenticateToken, authorize(['manager', 'admin']), async (req, res) => {
+  try {
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    
+    const analytics = await Analytics.findOne({ date: today });
+    
+    if (!analytics) {
+      // Create new analytics entry for today
+      const newAnalytics = new Analytics({
+        date: today,
+        totalRecharges: 0,
+        totalPurchases: 0,
+        totalRevenue: 0,
+        pendingRequests: await RechargeRequest.countDocuments({ status: 'pending' }),
+        approvedRequests: await RechargeRequest.countDocuments({ status: 'approved' }),
+        rejectedRequests: await RechargeRequest.countDocuments({ status: 'rejected' }),
+      });
+      await newAnalytics.save();
+      return res.json(newAnalytics);
+    }
+    
+    // Update current analytics
+    analytics.pendingRequests = await RechargeRequest.countDocuments({ status: 'pending' });
+    analytics.approvedRequests = await RechargeRequest.countDocuments({ status: 'approved' });
+    analytics.rejectedRequests = await RechargeRequest.countDocuments({ status: 'rejected' });
+    await analytics.save();
+    
+    res.json(analytics);
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+});
+
 app.post('/api/manager/recharge-requests/:id/approve', authenticateToken, authorize(['manager', 'admin']), async (req, res) => {
   try {
-    const request = await RechargeRequest.findById(req.params.id);
+    const request = await RechargeRequest.findById(req.params.id)
+      .populate('cardId')
+      .populate('studentId');
+    
     if (!request) {
       return res.status(404).json({ message: 'Request not found' });
     }
@@ -260,19 +397,22 @@ app.post('/api/manager/recharge-requests/:id/approve', authenticateToken, author
     await request.save();
 
     // Update card balance
-    const card = await MealCard.findById(request.cardId);
+    const card = await MealCard.findById(request.cardId._id);
     card.balance += request.amount;
     await card.save();
 
     // Create transaction record
     const transaction = new Transaction({
-      cardId: request.cardId,
+      cardId: request.cardId._id,
       type: 'recharge',
       amount: request.amount,
-      description: 'Recharge approved by manager',
+      description: `Recharge approved by manager - ${request.paymentMethod} payment`,
       processedBy: req.user.userId,
     });
     await transaction.save();
+
+    // Update analytics
+    await updateAnalytics();
 
     res.json({ message: 'Recharge request approved successfully' });
   } catch (error) {
@@ -291,6 +431,9 @@ app.post('/api/manager/recharge-requests/:id/reject', authenticateToken, authori
     request.processedBy = req.user.userId;
     request.processedAt = new Date();
     await request.save();
+
+    // Update analytics
+    await updateAnalytics();
 
     res.json({ message: 'Recharge request rejected successfully' });
   } catch (error) {
@@ -342,6 +485,9 @@ app.post('/api/cashier/purchase', authenticateToken, authorize(['cashier', 'admi
     });
     await transaction.save();
 
+    // Update analytics
+    await updateAnalytics();
+
     res.json({ 
       message: 'Purchase successful',
       remainingBalance: card.balance,
@@ -356,6 +502,8 @@ app.post('/api/cashier/purchase', authenticateToken, authorize(['cashier', 'admi
 app.get('/api/admin/dashboard', authenticateToken, authorize(['admin']), async (req, res) => {
   try {
     const totalStudents = await User.countDocuments({ role: 'student' });
+    const totalManagers = await User.countDocuments({ role: 'manager' });
+    const totalCashiers = await User.countDocuments({ role: 'cashier' });
     const totalCards = await MealCard.countDocuments();
     const totalBalance = await MealCard.aggregate([
       { $group: { _id: null, total: { $sum: '$balance' } } }
@@ -369,6 +517,8 @@ app.get('/api/admin/dashboard', authenticateToken, authorize(['admin']), async (
 
     res.json({
       totalStudents,
+      totalManagers,
+      totalCashiers,
       totalCards,
       totalBalance: totalBalance[0]?.total || 0,
       todayTransactions,
@@ -381,8 +531,53 @@ app.get('/api/admin/dashboard', authenticateToken, authorize(['admin']), async (
 
 app.get('/api/admin/users', authenticateToken, authorize(['admin']), async (req, res) => {
   try {
-    const users = await User.find().select('-password');
+    const { role } = req.query;
+    const filter = role ? { role } : {};
+    
+    const users = await User.find(filter).select('-password');
     res.json(users);
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+});
+
+app.post('/api/admin/users', authenticateToken, authorize(['admin']), async (req, res) => {
+  try {
+    const { name, email, password, role, studentId } = req.body;
+    
+    const existingUser = await User.findOne({ email });
+    if (existingUser) {
+      return res.status(400).json({ message: 'User already exists' });
+    }
+
+    const hashedPassword = await bcrypt.hash(password, 10);
+    
+    const userData = {
+      name,
+      email,
+      password: hashedPassword,
+      role,
+    };
+
+    if (role === 'student' && studentId) {
+      userData.studentId = studentId;
+    }
+
+    const user = new User(userData);
+    await user.save();
+
+    // Create meal card for students
+    if (role === 'student') {
+      const cardNumber = `CARD${Date.now()}`;
+      const mealCard = new MealCard({
+        cardNumber,
+        studentId: user._id,
+        balance: 100, // Default balance
+      });
+      await mealCard.save();
+    }
+
+    res.status(201).json({ message: 'User created successfully' });
   } catch (error) {
     res.status(500).json({ message: error.message });
   }
@@ -403,10 +598,25 @@ app.get('/api/admin/transactions', authenticateToken, authorize(['admin']), asyn
 });
 
 // Meal management routes
-app.post('/api/admin/meals', authenticateToken, authorize(['admin']), async (req, res) => {
+app.get('/api/admin/meals', authenticateToken, authorize(['admin']), async (req, res) => {
   try {
-    const { name, price, category } = req.body;
-    const meal = new Meal({ name, price, category });
+    const meals = await Meal.find().sort({ createdAt: -1 });
+    res.json(meals);
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+});
+
+app.post('/api/admin/meals', authenticateToken, authorize(['admin']), upload.single('image'), async (req, res) => {
+  try {
+    const { name, price, category, description } = req.body;
+    const meal = new Meal({ 
+      name, 
+      price, 
+      category, 
+      description,
+      image: req.file ? req.file.path : null
+    });
     await meal.save();
     res.status(201).json(meal);
   } catch (error) {
@@ -414,9 +624,101 @@ app.post('/api/admin/meals', authenticateToken, authorize(['admin']), async (req
   }
 });
 
+app.put('/api/admin/meals/:id', authenticateToken, authorize(['admin']), upload.single('image'), async (req, res) => {
+  try {
+    const { name, price, category, description, isAvailable } = req.body;
+    const updateData = { name, price, category, description, isAvailable };
+    
+    if (req.file) {
+      updateData.image = req.file.path;
+    }
+
+    const meal = await Meal.findByIdAndUpdate(
+      req.params.id,
+      updateData,
+      { new: true }
+    );
+    
+    if (!meal) {
+      return res.status(404).json({ message: 'Meal not found' });
+    }
+    
+    res.json(meal);
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+});
+
+app.delete('/api/admin/meals/:id', authenticateToken, authorize(['admin']), async (req, res) => {
+  try {
+    const meal = await Meal.findByIdAndDelete(req.params.id);
+    if (!meal) {
+      return res.status(404).json({ message: 'Meal not found' });
+    }
+    
+    res.json({ message: 'Meal deleted successfully' });
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+});
+
+// Bulk user upload (Excel/CSV would be handled here)
+app.post('/api/admin/users/bulk', authenticateToken, authorize(['admin']), async (req, res) => {
+  try {
+    const { users } = req.body; // Array of user objects
+    
+    const results = {
+      success: [],
+      errors: []
+    };
+
+    for (const userData of users) {
+      try {
+        const existingUser = await User.findOne({ email: userData.email });
+        if (existingUser) {
+          results.errors.push({ user: userData, error: 'User already exists' });
+          continue;
+        }
+
+        const hashedPassword = await bcrypt.hash(userData.password || 'default123', 10);
+        
+        const user = new User({
+          name: userData.name,
+          email: userData.email,
+          password: hashedPassword,
+          role: userData.role,
+          studentId: userData.studentId
+        });
+
+        await user.save();
+
+        // Create meal card for students
+        if (userData.role === 'student') {
+          const cardNumber = `CARD${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+          const mealCard = new MealCard({
+            cardNumber,
+            studentId: user._id,
+            balance: 100, // Default balance
+          });
+          await mealCard.save();
+        }
+
+        results.success.push(user);
+      } catch (error) {
+        results.errors.push({ user: userData, error: error.message });
+      }
+    }
+
+    res.json(results);
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+});
+
+// Get all meals (for both cashier and student)
 app.get('/api/meals', authenticateToken, async (req, res) => {
   try {
-    const meals = await Meal.find();
+    const meals = await Meal.find({ isAvailable: true });
     res.json(meals);
   } catch (error) {
     res.status(500).json({ message: error.message });
@@ -438,6 +740,48 @@ app.get('/api/cashier/card/:cardNumber', authenticateToken, authorize(['cashier'
     res.status(500).json({ message: error.message });
   }
 });
+
+// Helper function to update analytics
+async function updateAnalytics() {
+  try {
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    
+    let analytics = await Analytics.findOne({ date: today });
+    
+    if (!analytics) {
+      analytics = new Analytics({ date: today });
+    }
+    
+    // Update transaction counts
+    analytics.totalRecharges = await Transaction.countDocuments({ 
+      type: 'recharge', 
+      createdAt: { $gte: today } 
+    });
+    
+    analytics.totalPurchases = await Transaction.countDocuments({ 
+      type: 'purchase', 
+      createdAt: { $gte: today } 
+    });
+    
+    // Update revenue
+    const rechargeRevenue = await Transaction.aggregate([
+      { $match: { type: 'recharge', createdAt: { $gte: today } } },
+      { $group: { _id: null, total: { $sum: '$amount' } } }
+    ]);
+    
+    analytics.totalRevenue = rechargeRevenue[0]?.total || 0;
+    
+    // Update request counts
+    analytics.pendingRequests = await RechargeRequest.countDocuments({ status: 'pending' });
+    analytics.approvedRequests = await RechargeRequest.countDocuments({ status: 'approved' });
+    analytics.rejectedRequests = await RechargeRequest.countDocuments({ status: 'rejected' });
+    
+    await analytics.save();
+  } catch (error) {
+    console.error('Error updating analytics:', error);
+  }
+}
 
 const PORT = process.env.PORT || 5000;
 app.listen(PORT, () => {

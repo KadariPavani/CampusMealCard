@@ -8,7 +8,7 @@ mongoose.connect(process.env.MONGODB_URI || 'mongodb://localhost:27017/mealcard'
   useUnifiedTopology: true,
 });
 
-// Import schemas (you'll need to adjust these based on your file structure)
+// Import schemas
 const userSchema = new mongoose.Schema({
   name: { type: String, required: true },
   email: { type: String, required: true, unique: true },
@@ -57,29 +57,37 @@ async function seedDatabase() {
     });
     await admin.save();
 
-    // Create manager user
-    const managerPassword = await bcrypt.hash('manager123', 10);
-    const manager = new User({
-      name: 'John Manager',
-      email: 'manager@university.edu',
-      password: managerPassword,
-      role: 'manager',
-    });
-    await manager.save();
+    // Create manager users
+    const managers = [];
+    for (let i = 1; i <= 2; i++) {
+      const managerPassword = await bcrypt.hash('manager123', 10);
+      const manager = new User({
+        name: `Manager ${i}`,
+        email: `manager${i}@university.edu`,
+        password: managerPassword,
+        role: 'manager',
+      });
+      await manager.save();
+      managers.push(manager);
+    }
 
-    // Create cashier user
-    const cashierPassword = await bcrypt.hash('cashier123', 10);
-    const cashier = new User({
-      name: 'Jane Cashier',
-      email: 'cashier@university.edu',
-      password: cashierPassword,
-      role: 'cashier',
-    });
-    await cashier.save();
+    // Create cashier users
+    const cashiers = [];
+    for (let i = 1; i <= 3; i++) {
+      const cashierPassword = await bcrypt.hash('cashier123', 10);
+      const cashier = new User({
+        name: `Cashier ${i}`,
+        email: `cashier${i}@university.edu`,
+        password: cashierPassword,
+        role: 'cashier',
+      });
+      await cashier.save();
+      cashiers.push(cashier);
+    }
 
     // Create sample students
     const students = [];
-    for (let i = 1; i <= 5; i++) {
+    for (let i = 1; i <= 20; i++) {
       const studentPassword = await bcrypt.hash('student123', 10);
       const student = new User({
         name: `Student ${i}`,
@@ -91,7 +99,7 @@ async function seedDatabase() {
       await student.save();
       students.push(student);
 
-      // Create meal card for each student
+      // Create meal card for each student with initial balance
       const mealCard = new MealCard({
         cardNumber: `CARD${Date.now() + i}`,
         studentId: student._id,
@@ -112,6 +120,11 @@ async function seedDatabase() {
       { name: 'Pizza Slice', price: 100, category: 'Main Course' },
       { name: 'Samosa', price: 25, category: 'Snacks' },
       { name: 'Ice Cream', price: 50, category: 'Desserts' },
+      { name: 'Chicken Biryani', price: 180, category: 'Main Course' },
+      { name: 'Vegetable Biryani', price: 120, category: 'Main Course' },
+      { name: 'Chicken Roll', price: 90, category: 'Snacks' },
+      { name: 'Paneer Tikka', price: 140, category: 'Snacks' },
+      { name: 'Lassi', price: 40, category: 'Beverages' },
     ];
 
     for (const mealData of meals) {
@@ -122,9 +135,9 @@ async function seedDatabase() {
     console.log('Database seeded successfully!');
     console.log('\nDefault login credentials:');
     console.log('Admin: admin@university.edu / admin123');
-    console.log('Manager: manager@university.edu / manager123');
-    console.log('Cashier: cashier@university.edu / cashier123');
-    console.log('Students: student1@university.edu to student5@university.edu / student123');
+    console.log('Managers: manager1@university.edu to manager2@university.edu / manager123');
+    console.log('Cashiers: cashier1@university.edu to cashier3@university.edu / cashier123');
+    console.log('Students: student1@university.edu to student20@university.edu / student123');
 
     process.exit(0);
   } catch (error) {

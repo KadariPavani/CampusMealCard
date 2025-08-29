@@ -1,5 +1,3 @@
-
-/* Global Styles */
 * {
   margin: 0;
   padding: 0;
@@ -7,27 +5,9 @@
 }
 
 body {
-  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen',
-    'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue',
-    sans-serif;
-  -webkit-font-smoothing: antialiased;
-  -moz-osx-font-smoothing: grayscale;
+  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
   background-color: #f5f5f5;
   color: #333;
-}
-
-.App {
-  min-height: 100vh;
-}
-
-/* Loading */
-.loading {
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  height: 100vh;
-  font-size: 18px;
-  color: #666;
 }
 
 /* Login Styles */
@@ -42,8 +22,8 @@ body {
 .login-form {
   background: white;
   padding: 2rem;
-  border-radius: 8px;
-  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+  border-radius: 10px;
+  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1);
   width: 100%;
   max-width: 400px;
 }
@@ -58,110 +38,69 @@ body {
   margin-bottom: 1rem;
 }
 
-.form-group input,
-.form-group select {
+.form-group input {
   width: 100%;
   padding: 0.75rem;
   border: 1px solid #ddd;
-  border-radius: 4px;
-  font-size: 16px;
-}
-
-.form-group input:focus,
-.form-group select:focus {
-  outline: none;
-  border-color: #667eea;
-  box-shadow: 0 0 0 2px rgba(102, 126, 234, 0.2);
-}
-
-.form-group label {
-  display: block;
-  margin-bottom: 0.5rem;
-  font-weight: 500;
-  color: #555;
+  border-radius: 5px;
+  font-size: 1rem;
 }
 
 button {
-  background-color: #667eea;
+  width: 100%;
+  padding: 0.75rem;
+  background: #667eea;
   color: white;
   border: none;
-  padding: 0.75rem 1.5rem;
-  border-radius: 4px;
+  border-radius: 5px;
+  font-size: 1rem;
   cursor: pointer;
-  font-size: 16px;
-  transition: background-color 0.2s;
+  margin-bottom: 0.5rem;
 }
 
-button:hover:not(:disabled) {
-  background-color: #5a6fd8;
+button:hover {
+  background: #5a67d8;
 }
 
 button:disabled {
-  background-color: #ccc;
+  background: #ccc;
   cursor: not-allowed;
 }
 
-.login-form button {
-  width: 100%;
-  margin-bottom: 1rem;
-}
-
 .error {
-  color: #e74c3c;
+  color: #e53e3e;
   text-align: center;
   margin-bottom: 1rem;
-  padding: 0.5rem;
-  background-color: #ffeaea;
-  border-radius: 4px;
 }
 
 .quick-login {
   margin-top: 1.5rem;
-  padding-top: 1.5rem;
   border-top: 1px solid #eee;
+  padding-top: 1rem;
 }
 
 .quick-login h4 {
-  margin-bottom: 1rem;
-  color: #666;
+  margin-bottom: 0.5rem;
   text-align: center;
 }
 
-.quick-buttons {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 0.5rem;
+.quick-login button {
+  background: #48bb78;
+  margin-bottom: 0.5rem;
 }
 
-.quick-buttons button {
-  padding: 0.5rem;
-  font-size: 14px;
-  background-color: #95a5a6;
+.quick-login button:hover {
+  background: #38a169;
 }
 
-.quick-buttons button:hover {
-  background-color: #7f8c8d;
-}
-
-/* App Container */
-.app-container {
-  min-height: 100vh;
-  display: flex;
-  flex-direction: column;
-}
-
-.app-header {
-  background-color: #2c3e50;
-  color: white;
+/* Dashboard Styles */
+.header {
+  background: white;
   padding: 1rem 2rem;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
   display: flex;
   justify-content: space-between;
   align-items: center;
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-}
-
-.app-header h1 {
-  font-size: 1.5rem;
 }
 
 .user-info {
@@ -170,30 +109,116 @@ button:disabled {
   gap: 1rem;
 }
 
-.logout-btn {
-  background-color: #e74c3c;
+.user-info button {
+  width: auto;
   padding: 0.5rem 1rem;
-  font-size: 14px;
+  background: #e53e3e;
 }
 
-.logout-btn:hover {
-  background-color: #c0392b;
+.user-info button:hover {
+  background: #c53030;
 }
 
-.main-content {
-  flex: 1;
+.dashboard {
   padding: 2rem;
   max-width: 1200px;
   margin: 0 auto;
-  width: 100%;
 }
 
-/* Dashboard Styles */
 .dashboard h2 {
   margin-bottom: 2rem;
-  color: #2c3e50;
+  color: #333;
 }
 
+/* Card Info */
+.card-info {
+  background: white;
+  padding: 1.5rem;
+  border-radius: 8px;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  margin-bottom: 2rem;
+}
+
+.card-info h3 {
+  margin-bottom: 1rem;
+  color: #333;
+}
+
+/* Modal */
+.modal {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.5);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 1000;
+}
+
+.modal-content {
+  background: white;
+  padding: 2rem;
+  border-radius: 8px;
+  max-width: 500px;
+  width: 90%;
+  max-height: 90vh;
+  overflow-y: auto;
+}
+
+.modal-content h3 {
+  margin-bottom: 1.5rem;
+}
+
+.modal-content form {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.modal-content input,
+.modal-content select,
+.modal-content textarea {
+  padding: 0.75rem;
+  border: 1px solid #ddd;
+  border-radius: 5px;
+  font-size: 1rem;
+}
+
+.modal-content button {
+  margin-bottom: 0.5rem;
+}
+
+/* Tables */
+table {
+  width: 100%;
+  border-collapse: collapse;
+  background: white;
+  border-radius: 8px;
+  overflow: hidden;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  margin-bottom: 2rem;
+}
+
+th, td {
+  padding: 1rem;
+  text-align: left;
+  border-bottom: 1px solid #eee;
+}
+
+th {
+  background: #f7fafc;
+  font-weight: 600;
+  color: #4a5568;
+}
+
+tr:hover {
+  background: #f7fafc;
+}
+
+/* Stats Grid */
 .stats-grid {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
@@ -209,357 +234,145 @@ button:disabled {
   text-align: center;
 }
 
-.stat-card h3 {
-  font-size: 14px;
-  color: #666;
+.stat-card h4 {
+  color: #718096;
+  font-size: 0.9rem;
   margin-bottom: 0.5rem;
-  text-transform: uppercase;
-  letter-spacing: 0.5px;
 }
 
-.stat-number {
-  font-size: 2rem;
+.stat-card p {
+  font-size: 1.5rem;
   font-weight: bold;
-  color: #2c3e50;
-  margin: 0;
-}
-
-.section {
-  background: white;
-  padding: 1.5rem;
-  border-radius: 8px;
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-  margin-bottom: 2rem;
-}
-
-.section h3 {
-  margin-bottom: 1rem;
-  color: #2c3e50;
-  border-bottom: 2px solid #ecf0f1;
-  padding-bottom: 0.5rem;
-}
-
-/* Table Styles */
-.table-container {
-  overflow-x: auto;
-}
-
-table {
-  width: 100%;
-  border-collapse: collapse;
-  background: white;
-}
-
-table th,
-table td {
-  padding: 0.75rem;
-  text-align: left;
-  border-bottom: 1px solid #eee;
-}
-
-table th {
-  background-color: #f8f9fa;
-  font-weight: 600;
-  color: #555;
-}
-
-table tr:hover {
-  background-color: #f8f9fa;
-}
-
-/* Type and Status Badges */
-.type, .status, .role {
-  padding: 0.25rem 0.5rem;
-  border-radius: 12px;
-  font-size: 12px;
-  font-weight: 500;
-  text-transform: uppercase;
-  letter-spacing: 0.5px;
-}
-
-.type.recharge, .status.approved {
-  background-color: #d4edda;
-  color: #155724;
-}
-
-.type.purchase, .status.rejected {
-  background-color: #f8d7da;
-  color: #721c24;
-}
-
-.status.pending {
-  background-color: #fff3cd;
-  color: #856404;
-}
-
-.status.completed {
-  background-color: #d1ecf1;
-  color: #0c5460;
-}
-
-.role.admin {
-  background-color: #d4edda;
-  color: #155724;
-}
-
-.role.manager {
-  background-color: #d1ecf1;
-  color: #0c5460;
-}
-
-.role.cashier {
-  background-color: #ffeaa7;
-  color: #b8860b;
-}
-
-.role.student {
-  background-color: #e2e3e5;
-  color: #495057;
-}
-
-/* Action Buttons */
-.action-buttons {
-  display: flex;
-  gap: 0.5rem;
-}
-
-.approve-btn {
-  background-color: #28a745;
-  padding: 0.25rem 0.5rem;
-  font-size: 12px;
-}
-
-.approve-btn:hover {
-  background-color: #218838;
-}
-
-.reject-btn {
-  background-color: #dc3545;
-  padding: 0.25rem 0.5rem;
-  font-size: 12px;
-}
-
-.reject-btn:hover {
-  background-color: #c82333;
-}
-
-/* Search Container */
-.search-container {
-  display: flex;
-  gap: 1rem;
-  margin-bottom: 1rem;
-  align-items: center;
-}
-
-.search-container input {
-  flex: 1;
-  padding: 0.75rem;
-  border: 1px solid #ddd;
-  border-radius: 4px;
-}
-
-/* Card Info */
-.card-info {
-  background-color: #f8f9fa;
-  padding: 1rem;
-  border-radius: 4px;
-  border-left: 4px solid #667eea;
-  margin-top: 1rem;
-}
-
-.card-info p {
-  margin: 0.25rem 0;
-}
-
-/* Card Display */
-.card-display {
-  display: flex;
-  justify-content: center;
-  margin-bottom: 1rem;
-}
-
-.card-visual {
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-  color: white;
-  padding: 2rem;
-  border-radius: 12px;
-  box-shadow: 0 8px 16px rgba(0, 0, 0, 0.1);
-  width: 100%;
-  max-width: 400px;
-}
-
-.card-visual h4 {
-  margin-bottom: 1rem;
-  font-size: 18px;
-}
-
-.card-visual p {
-  margin: 0.5rem 0;
-}
-
-/* Purchase Container */
-.purchase-container {
-  display: flex;
-  flex-direction: column;
-  gap: 1rem;
-}
-
-.purchase-btn {
-  background-color: #28a745;
-  align-self: flex-start;
-}
-
-.purchase-btn:hover {
-  background-color: #218838;
-}
-
-.purchase-btn:disabled {
-  background-color: #6c757d;
+  color: #2d3748;
 }
 
 /* Meals Grid */
 .meals-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
   gap: 1rem;
+  margin-bottom: 2rem;
 }
 
 .meal-card {
   background: white;
-  border: 1px solid #eee;
+  padding: 1.5rem;
   border-radius: 8px;
-  padding: 1rem;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
   text-align: center;
 }
 
 .meal-card h4 {
   margin-bottom: 0.5rem;
-  color: #2c3e50;
+  color: #2d3748;
 }
 
-.meal-card .price {
-  font-size: 1.25rem;
+.meal-card p {
+  color: #718096;
+  margin-bottom: 0.25rem;
+}
+
+/* Filter Buttons */
+.filter-buttons {
+  display: flex;
+  gap: 0.5rem;
+  margin-bottom: 1rem;
+}
+
+.filter-buttons button {
+  width: auto;
+  padding: 0.5rem 1rem;
+  background: #e2e8f0;
+  color: #4a5568;
+}
+
+.filter-buttons button.active {
+  background: #667eea;
+  color: white;
+}
+
+/* Search Form */
+.search-form {
+  display: flex;
+  gap: 0.5rem;
+  margin-bottom: 1rem;
+}
+
+.search-form input {
+  flex: 1;
+  padding: 0.75rem;
+  border: 1px solid #ddd;
+  border-radius: 5px;
+}
+
+.search-form button {
+  width: auto;
+  padding: 0.75rem 1rem;
+}
+
+/* Message */
+.message {
+  background: #e6fffa;
+  color: #234e52;
+  padding: 1rem;
+  border-radius: 5px;
+  margin-bottom: 1rem;
+  border: 1px solid #81e6d9;
+}
+
+/* UPI Info */
+.upi-info {
+  background: #f0f9ff;
+  padding: 1rem;
+  border-radius: 5px;
+  margin: 1rem 0;
+  border: 1px solid #90cdf4;
+}
+
+.upi-info a {
+  color: #3182ce;
+  text-decoration: none;
   font-weight: bold;
-  color: #27ae60;
-  margin: 0.5rem 0;
 }
 
-.meal-card .category {
-  font-size: 0.9rem;
-  color: #666;
-  margin: 0;
+.upi-info a:hover {
+  text-decoration: underline;
 }
 
-/* Recharge Container */
-.recharge-container {
+/* Admin Sections */
+.admin-sections {
+  display: grid;
+  gap: 2rem;
+}
+.admin-section {
+  background: white;
+  padding: 1.5rem;
+  border-radius: 8px;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.admin-section h3 {
+  margin-bottom: 1rem;
+  color: #333;
+}
+.admin-section form {
   display: flex;
   flex-direction: column;
   gap: 1rem;
 }
-
-.recharge-buttons {
-  display: flex;
-  gap: 1rem;
-  flex-wrap: wrap;
+.admin-section button {
+  width: auto;
+  padding: 0.75rem 1rem;
 }
-
-.mock-payment-btn {
-  background-color: #17a2b8;
+.admin-section button:hover {
+  background: #5a67d8;
 }
-
-.mock-payment-btn:hover {
-  background-color: #138496;
-}
-
-.request-btn {
-  background-color: #ffc107;
-  color: #212529;
-}
-
-.request-btn:hover {
-  background-color: #e0a800;
-}
-
-.note {
-  font-size: 0.9rem;
-  color: #666;
-  font-style: italic;
-  margin-top: 0.5rem;
-}
-
-/* Transaction Amount Colors */
-.credit {
-  color: #28a745;
-  font-weight: 600;
-}
-
-.debit {
-  color: #dc3545;
-  font-weight: 600;
-}
-
-/* No Data Message */
-.no-data {
-  text-align: center;
-  color: #666;
-  font-style: italic;
-  padding: 2rem;
-}
-
-/* Responsive Design */
+/* Responsive */
 @media (max-width: 768px) {
-  .main-content {
-    padding: 1rem;
-  }
-
-  .app-header {
-    padding: 1rem;
+  .header {
     flex-direction: column;
+    align-items: flex-start;
     gap: 1rem;
-    text-align: center;
-  }
-
-  .stats-grid {
-    grid-template-columns: 1fr;
-  }
-
-  .search-container {
-    flex-direction: column;
-  }
-
-  .search-container input {
-    margin-bottom: 0.5rem;
-  }
-
-  .recharge-buttons {
-    flex-direction: column;
-  }
-
-  .quick-buttons {
-    grid-template-columns: 1fr;
-  }
-
-  table {
-    font-size: 14px;
-  }
-
-  table th,
-  table td {
-    padding: 0.5rem;
   }
 }
-
-@media (max-width: 480px) {
-  .login-form {
-    margin: 1rem;
-    padding: 1.5rem;
-  }
-
-  .card-visual {
-    padding: 1.5rem;
-  }
-
-  .meals-grid {
-    grid-template-columns: 1fr;
-  }
-}
+/* End of App.css */
